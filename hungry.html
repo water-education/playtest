@@ -7,11 +7,15 @@
 </script>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-us">
 <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
     <title>Hungry Shark</title>
+
+    <!-- If you upload a real Unity build later, change this base href -->
+    <!-- <base href="https://cdn.jsdelivr.net/gh/YOUR-USERNAME/YOUR-REPO@latest/"> -->
+
     <style>
         html, body {
             margin: 0;
@@ -19,59 +23,65 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background: #001122;
-            font-family: Arial, sans-serif;
+            background: black;
         }
 
-        canvas {
+        #gameContainer, canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             display: block;
-            margin: 0 auto;
-            background: #003366;
-        }
-
-        #score {
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            z-index: 10;
         }
 
         #loading-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             color: white;
-            font-family: cursive;
             font-size: 48px;
+            font-family: cursive;
             text-align: center;
-            z-index: 5;
+            position: absolute;
+            top: 40%;
+            width: 100%;
+            z-index: 10;
         }
 
         #sidebarad1, #sidebarad2 {
-          position: fixed; top: 50%; transform: translateY(-50%);
-          width: 160px; height: 600px; padding: 0; margin: 0; z-index: 999999;
+          position: fixed;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 160px;
+          height: 600px;
+          padding: 0;
+          margin: 0;
+          z-index: 999999;
         }
         #sidebarad1 { left: 0; }
         #sidebarad2 { right: 0; }
+
         .sidebar-close {
-          position: absolute; top: 0; right: 0; width: 22px; height: 22px;
-          line-height: 22px; text-align: center; background: rgba(0,0,0,0.7);
-          color: #fff; font-size: 14px; cursor: pointer; user-select: none; z-index: 10;
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 22px;
+          height: 22px;
+          line-height: 22px;
+          text-align: center;
+          background: rgba(0,0,0,0.7);
+          color: #fff;
+          font-size: 14px;
+          cursor: pointer;
+          user-select: none;
+          z-index: 10;
         }
     </style>
 </head>
 <body>
 
     <div id="loading-text">LOADING HUNGRY SHARK...</div>
-    <div id="score">Score: 0</div>
-    <canvas id="canvas"></canvas>
+    <div id="gameContainer"></div>
 
-    <!-- Sidebar placeholders (remove if you want) -->
+    <!-- Sidebar ads (same as your example) -->
     <div id="sidebarad1">
       <div class="sidebar-close" onclick="this.parentElement.style.display='none'">✕</div>
     </div>
@@ -80,144 +90,119 @@
     </div>
 
     <script>
-        const canvas = document.getElementById("canvas");
+        // Simple canvas Hungry Shark (Unity-style feel)
+        const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
-        const scoreElement = document.getElementById("score");
-        const loadingText = document.getElementById("loading-text");
+        document.getElementById("gameContainer").appendChild(canvas);
 
-        // Set canvas size
-        function resizeCanvas() {
+        function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         }
-        resizeCanvas();
-        window.addEventListener("resize", resizeCanvas);
+        resize();
+        window.addEventListener("resize", resize);
 
-        // Game variables
         let score = 0;
-        let shark = { x: 100, y: 300, size: 40, speed: 8 };
-        let fish = [];
+        let shark = { x: canvas.width/2, y: canvas.height/2, size: 45 };
+        let fishList = [];
         let keys = {};
 
-        // Create fish
-        function createFish() {
-            return {
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: 12 + Math.random() * 18,
-                speed: 2 + Math.random() * 3,
-                color: `hsl(${Math.random()*60 + 180}, 80%, 60%)`
-            };
-        }
-
-        for (let i = 0; i < 25; i++) {
-            fish.push(createFish());
-        }
-
-        // Controls
         window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
         window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-        // Touch controls for mobile
-        let touchX = 0, touchY = 0;
-        canvas.addEventListener("touchstart", e => {
-            touchX = e.touches[0].clientX;
-            touchY = e.touches[0].clientY;
-        });
+        // Touch support
         canvas.addEventListener("touchmove", e => {
-            if (e.touches.length > 0) {
-                shark.x = e.touches[0].clientX - shark.size/2;
-                shark.y = e.touches[0].clientY - shark.size/2;
+            if (e.touches.length) {
+                shark.x = e.touches[0].clientX;
+                shark.y = e.touches[0].clientY;
             }
         });
 
-        // Main game loop
+        for (let i = 0; i < 30; i++) {
+            fishList.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: 10 + Math.random() * 15,
+                speed: 1.5 + Math.random() * 2.5
+            });
+        }
+
         function gameLoop() {
-            // Background
-            ctx.fillStyle = "#001122";
+            ctx.fillStyle = "#001133";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Move shark with keyboard
-            if (keys["arrowleft"] || keys["a"]) shark.x -= shark.speed;
-            if (keys["arrowright"] || keys["d"]) shark.x += shark.speed;
-            if (keys["arrowup"] || keys["w"]) shark.y -= shark.speed;
-            if (keys["arrowdown"] || keys["s"]) shark.y += shark.speed;
+            // Shark movement
+            if (keys["arrowleft"] || keys["a"]) shark.x -= 9;
+            if (keys["arrowright"] || keys["d"]) shark.x += 9;
+            if (keys["arrowup"] || keys["w"]) shark.y -= 9;
+            if (keys["arrowdown"] || keys["s"]) shark.y += 9;
 
-            // Keep shark on screen
-            shark.x = Math.max(shark.size/2, Math.min(canvas.width - shark.size/2, shark.x));
-            shark.y = Math.max(shark.size/2, Math.min(canvas.height - shark.size/2, shark.y));
+            shark.x = Math.max(30, Math.min(canvas.width - 30, shark.x));
+            shark.y = Math.max(30, Math.min(canvas.height - 30, shark.y));
 
-            // Draw shark (simple triangle shape)
+            // Draw shark
             ctx.save();
             ctx.translate(shark.x, shark.y);
-            ctx.fillStyle = "#00ccff";
+            ctx.fillStyle = "#00aaff";
             ctx.beginPath();
-            ctx.moveTo(shark.size, 0);
-            ctx.lineTo(-shark.size * 0.8, -shark.size * 0.7);
-            ctx.lineTo(-shark.size * 0.6, 0);
-            ctx.lineTo(-shark.size * 0.8, shark.size * 0.7);
+            ctx.moveTo(50, 0);
+            ctx.lineTo(-35, -30);
+            ctx.lineTo(-25, 0);
+            ctx.lineTo(-35, 30);
             ctx.closePath();
             ctx.fill();
 
             // Eye
-            ctx.fillStyle = "white";
+            ctx.fillStyle = "#fff";
             ctx.beginPath();
-            ctx.arc(shark.size * 0.4, -8, 8, 0, Math.PI * 2);
+            ctx.arc(25, -10, 10, 0, Math.PI*2);
             ctx.fill();
-            ctx.fillStyle = "black";
+            ctx.fillStyle = "#000";
             ctx.beginPath();
-            ctx.arc(shark.size * 0.45, -8, 4, 0, Math.PI * 2);
+            ctx.arc(28, -10, 5, 0, Math.PI*2);
             ctx.fill();
             ctx.restore();
 
-            // Update and draw fish
-            for (let i = 0; i < fish.length; i++) {
-                let f = fish[i];
+            // Fish
+            for (let i = 0; i < fishList.length; i++) {
+                let f = fishList[i];
                 f.x -= f.speed;
 
-                // Respawn fish when off screen
                 if (f.x < -50) {
                     f.x = canvas.width + 50;
                     f.y = Math.random() * canvas.height;
                 }
 
-                // Draw fish
-                ctx.fillStyle = f.color;
+                ctx.fillStyle = "#ffcc44";
                 ctx.beginPath();
-                ctx.ellipse(f.x, f.y, f.size, f.size * 0.6, 0, 0, Math.PI * 2);
+                ctx.ellipse(f.x, f.y, f.size, f.size*0.6, 0, 0, Math.PI*2);
                 ctx.fill();
 
-                // Simple tail
-                ctx.beginPath();
-                ctx.moveTo(f.x - f.size, f.y);
-                ctx.lineTo(f.x - f.size * 1.6, f.y - 8);
-                ctx.lineTo(f.x - f.size * 1.6, f.y + 8);
-                ctx.fill();
-
-                // Collision with shark
+                // Collision
                 let dx = shark.x - f.x;
                 let dy = shark.y - f.y;
-                let distance = Math.sqrt(dx*dx + dy*dy);
-
-                if (distance < shark.size * 0.8 + f.size) {
-                    score += 10;
-                    scoreElement.textContent = `Score: ${score}`;
-                    fish[i] = createFish(); // respawn eaten fish
+                if (Math.sqrt(dx*dx + dy*dy) < 55) {
+                    score += 20;
+                    f.x = canvas.width + 100;
+                    f.y = Math.random() * canvas.height;
                 }
             }
 
-            // Remove loading text after start
-            if (loadingText.style.display !== "none") {
-                setTimeout(() => { loadingText.style.display = "none"; }, 800);
+            // Score
+            ctx.fillStyle = "white";
+            ctx.font = "bold 32px Arial";
+            ctx.fillText("Score: " + score, 30, 60);
+
+            // Remove loading text
+            if (document.getElementById("loading-text").style.opacity !== "0") {
+                document.getElementById("loading-text").style.transition = "opacity 1s";
+                document.getElementById("loading-text").style.opacity = "0";
             }
 
             requestAnimationFrame(gameLoop);
         }
 
-        // Start the game
         gameLoop();
-
-        console.log("Hungry Shark - Simple Canvas Version Loaded 🦈");
     </script>
 </body>
 </html>
