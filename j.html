@@ -259,15 +259,32 @@
         };
 
         var unityInstance = UnityLoader.instantiate(
-          "unityContainer",
-          "Build/jsab.json",
-          {
-            onProgress: UnityProgress
-          }
-        );
+  "unityContainer",
+  "Build/jsab.json",
+  {
+    onProgress: UnityProgress
+  }
+);
 
-        loadingText.style.display = "none";
+setInterval(() => {
+  const canvas = document.querySelector("canvas");
 
+  if (canvas) {
+    canvas.style.background = "black";
+    canvas.style.backgroundColor = "black";
+
+    const gl =
+      canvas.getContext("webgl") ||
+      canvas.getContext("experimental-webgl");
+
+    if (gl) {
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+  }
+}, 100);
+
+loadingText.style.display = "none";
       })();
     </script>
   </body>
