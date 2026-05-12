@@ -252,38 +252,20 @@
           return originalSend.apply(this, args);
         };
 
-        Module = {
-          webglContextAttributes: {
-            alpha: false
-          }
-        };
-
-        var unityInstance = UnityLoader.instantiate(
+       var unityInstance = UnityLoader.instantiate(
   "unityContainer",
   "Build/jsab.json",
   {
-    onProgress: UnityProgress
+    onProgress: UnityProgress,
+    Module: {
+      webglContextAttributes: {
+        alpha: false
+      }
+    }
   }
 );
 
-setInterval(() => {
-  const canvas = document.querySelector("canvas");
-
-  if (!canvas) return;
-
-  canvas.style.background = "black";
-  canvas.style.backgroundColor = "black";
-
-  try {
-    const gl =
-      canvas.getContext("webgl", { alpha: false }) ||
-      canvas.getContext("experimental-webgl", { alpha: false });
-
-    if (!gl) return;
-
-    gl.clearColor(0, 0, 0, 1);
-  } catch (e) {}
-}, 500);
+document.body.style.background = "black";
 
 loadingText.style.display = "none";
       })();
