@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Tanuki Sunset - Optimized for Chromebook</title>
     
-    <!-- Basic Analytics (kept but can be removed) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-L7856P3VNT"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -21,17 +18,17 @@
     <script src="https://rawcdn.githack.com/Jokarcana/Tanuki-Sunset/a5b13b1279016c9bd123f06a4886b5987fa06dc5/Build/UnityLoader.js"></script>
 
     <style>
-        body, html {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+            width: 100%;
             overflow: hidden;
             background: #000;
-            touch-action: none; /* Better touch handling on Chromebooks */
-        }
-        #gameContainer {
-            width: 100vw;
-            height: 100vh;
-            display: block;
+            touch-action: none;
         }
         .webgl-content {
             position: absolute;
@@ -39,10 +36,20 @@
             left: 0;
             width: 100%;
             height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        /* Hide progress bar after load for cleaner look */
-        #unity-progress-bar-container.complete {
-            display: none;
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -60,36 +67,28 @@
                     onRuntimeInitialized: function () {
                         UnityProgress(gameInstance, "complete");
                     },
-                    // Performance optimizations for Chromebooks
-                    print: function (text) { console.log(text); },
-                    printErr: function (text) { console.error(text); },
-                    // Lower memory footprint hints
-                    totalMemory: 1024 * 1024 * 1024, // 1GB cap (adjust if needed)
-                    // Force lower resolution on lower-end devices
+                    totalMemory: 1024 * 1024 * 1024,
                     canvas: document.getElementById("gameContainer")
                 }
             }
         );
 
-        // Chromebook-specific enhancements
-        window.addEventListener('resize', () => {
-            if (gameInstance && gameInstance.Module) {
-                // Unity WebGL will auto-adjust, but we force refresh
-                setTimeout(() => {
-                    gameInstance.SendMessage('GameManager', 'OnResize'); // if your game supports it
-                }, 100);
+        // Force resize and centering
+        function resizeGame() {
+            if (gameInstance && gameInstance.Module && gameInstance.Module.canvas) {
+                const canvas = gameInstance.Module.canvas;
+                canvas.style.width = "100vw";
+                canvas.style.height = "100vh";
             }
+        }
+
+        window.addEventListener('resize', resizeGame);
+        window.addEventListener('load', () => {
+            setTimeout(resizeGame, 500);
+            setTimeout(resizeGame, 1500); // Extra safety
         });
 
-        // Keyboard + touch improvements
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                // Allow easy exit fullscreen if needed
-                if (document.fullscreenElement) document.exitFullscreen();
-            }
-        });
-
-        // Optional: Auto fullscreen on load (Chromebooks handle this well)
+        // Optional auto fullscreen (Chromebook friendly)
         // document.documentElement.requestFullscreen().catch(() => {});
     </script>
 </body>
