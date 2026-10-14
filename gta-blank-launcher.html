@@ -8,142 +8,109 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: #f8f9fa;
-    color: #202124;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
+    background: #f8f9fa; color: #202124; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 20px;
   }
   .card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
-    padding: 32px 40px;
-    max-width: 460px;
-    width: 100%;
-    text-align: center;
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12); padding: 28px 32px;
+    max-width: 500px; width: 100%; text-align: center;
   }
-  h1 { font-size: 1.35rem; font-weight: 500; margin-bottom: 6px; }
-  p { font-size: 0.88rem; color: #5f6368; margin-bottom: 22px; line-height: 1.45; }
+  h1 { font-size: 1.3rem; font-weight: 500; margin-bottom: 6px; }
+  p { font-size: 0.86rem; color: #5f6368; margin-bottom: 16px; line-height: 1.45; }
   .btn {
-    display: block; width: 100%; padding: 12px 18px; margin: 8px 0;
-    border: none; border-radius: 8px; font-size: 0.92rem; font-weight: 500;
+    display: block; width: 100%; padding: 11px 16px; margin: 7px 0;
+    border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500;
     cursor: pointer; transition: background 0.15s;
   }
   .btn-primary { background: #1a73e8; color: #fff; }
   .btn-primary:hover { background: #1765cc; }
-  .btn-secondary { background: #f1f3f4; color: #202124; }
-  .btn-secondary:hover { background: #e8eaed; }
-  .btn-proxy { background: #34a853; color: #fff; }
-  .btn-proxy:hover { background: #2d8e47; }
-  #status { margin-top: 14px; font-size: 0.84rem; color: #5f6368; min-height: 1.2em; }
-  .note { margin-top: 18px; font-size: 0.72rem; color: #9aa0a6; line-height: 1.4; }
-  .divider { height: 1px; background: #e8eaed; margin: 18px 0; }
+  .btn-green { background: #34a853; color: #fff; }
+  .btn-green:hover { background: #2d8e47; }
+  .btn-sec { background: #f1f3f4; color: #202124; }
+  .btn-sec:hover { background: #e8eaed; }
+  #status { margin-top: 12px; font-size: 0.82rem; color: #5f6368; min-height: 1.2em; }
+  .note { margin-top: 14px; font-size: 0.71rem; color: #9aa0a6; line-height: 1.4; }
+  .divider { height: 1px; background: #e8eaed; margin: 14px 0; }
+  input {
+    width: 100%; padding: 10px 12px; margin: 6px 0 10px;
+    border: 1px solid #dadce0; border-radius: 8px; font-size: 0.9rem;
+  }
 </style>
 </head>
 <body>
   <div class="card">
     <h1>Resource Launcher</h1>
-    <p>Isolated blank context + proxy routes. For restricted networks.</p>
+    <p>Multiple mirrors + blank/proxy routes. Try until one loads.</p>
 
-    <button class="btn btn-primary" onclick="launchBlob()">1. Blob Blank (cleanest)</button>
-    <button class="btn btn-secondary" onclick="launchAboutBlank()">2. Classic about:blank</button>
-
-    <div class="divider"></div>
-
-    <button class="btn btn-proxy" onclick="launchProxy(0)">3. Proxy route A</button>
-    <button class="btn btn-proxy" onclick="launchProxy(1)">4. Proxy route B</button>
-    <button class="btn btn-proxy" onclick="launchProxy(2)">5. Proxy route C</button>
+    <button class="btn btn-primary" onclick="go('tryfive')">1. tryfive.fun (new mirror)</button>
+    <button class="btn btn-primary" onclick="go('playgta5net')">2. playgta5.net</button>
+    <button class="btn btn-primary" onclick="go('delos')">3. original deloskiyt</button>
 
     <div class="divider"></div>
-    <button class="btn btn-secondary" onclick="launchCustom()">Custom URL</button>
+
+    <button class="btn btn-green" onclick="goProxy(0)">4. Proxy A → tryfive</button>
+    <button class="btn btn-green" onclick="goProxy(1)">5. Proxy B → tryfive</button>
+    <button class="btn btn-green" onclick="goProxy(2)">6. Proxy C → tryfive</button>
+
+    <div class="divider"></div>
+    <input id="custom" type="text" placeholder="Paste any URL..." value="">
+    <button class="btn btn-sec" onclick="goCustom()">Launch custom</button>
 
     <div id="status"></div>
     <p class="note">
-      Securly blocks the domain at DNS/network level.<br>
-      Blob + proxy routes hide the real destination better.<br>
-      If all fail, the site itself is blocked school-wide.
+      tryfive.fun and playgta5.net are currently circulating as mirrors.<br>
+      If Securly blocks those domains too, only a working proxy or different host will get through.
     </p>
   </div>
 
 <script>
-const TARGET = "https://gta.deloskiyt.pl/";
+const MIRRORS = {
+  tryfive: "https://tryfive.fun/",
+  playgta5net: "https://playgta5.net/",
+  delos: "https://gta.deloskiyt.pl/"
+};
 
-// Public CORS-friendly proxy frontends (rotate if one dies)
 const PROXIES = [
   "https://corsproxy.io/?",
   "https://api.allorigins.win/raw?url=",
   "https://thingproxy.freeboard.io/fetch/"
 ];
 
-function setStatus(msg) {
-  document.getElementById("status").textContent = msg;
+function status(m){ document.getElementById("status").textContent = m; }
+
+function openFrame(src) {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title></title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#000}
+iframe{border:0;width:100%;height:100%;display:block}</style></head>
+<body><iframe src="${src}" allowfullscreen allow="autoplay;fullscreen;gamepad;clipboard-write"></iframe></body></html>`;
+  const blob = new Blob([html], {type:"text/html"});
+  const u = URL.createObjectURL(blob);
+  const w = window.open(u, "_blank");
+  if (!w) { status("Popup blocked — allow popups."); return; }
+  status("Launched: " + src.split("/")[2]);
+  setTimeout(() => URL.revokeObjectURL(u), 20000);
 }
 
-function openShell(html) {
-  const win = window.open("about:blank", "_blank");
-  if (!win) {
-    setStatus("Popup blocked — allow popups then retry.");
-    return null;
-  }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  return win;
+function go(key) {
+  const url = MIRRORS[key];
+  if (!url) return;
+  status("Opening " + key + "...");
+  openFrame(url);
 }
 
-function makeFrameHtml(src) {
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title></title>
-<style>html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000}
-iframe{border:none;width:100%;height:100%;display:block}</style></head>
-<body><iframe src="${src}" allowfullscreen allow="autoplay; fullscreen; gamepad; clipboard-write; encrypted-media"></iframe></body></html>`;
+function goProxy(i) {
+  const p = PROXIES[i] || PROXIES[0];
+  const src = p + encodeURIComponent(MIRRORS.tryfive);
+  status("Proxy " + (i+1) + " → tryfive...");
+  openFrame(src);
 }
 
-/* Method 1: blob URL — no domain in the iframe src that Securly can easily key on */
-function launchBlob() {
-  setStatus("Building blob shell...");
-  const html = makeFrameHtml(TARGET);
-  const blob = new Blob([html], { type: "text/html" });
-  const blobUrl = URL.createObjectURL(blob);
-
-  const win = window.open(blobUrl, "_blank");
-  if (!win) {
-    setStatus("Popup blocked — allow popups then retry.");
-    return;
-  }
-  setStatus("Blob launched. Address bar should show blob:...");
-  // Revoke later so memory stays clean
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
-}
-
-/* Method 2: classic about:blank write */
-function launchAboutBlank() {
-  setStatus("Opening about:blank...");
-  openShell(makeFrameHtml(TARGET));
-  setStatus("about:blank launched.");
-}
-
-/* Method 3-5: proxy the request so the browser talks to a different domain first */
-function launchProxy(idx) {
-  const proxy = PROXIES[idx] || PROXIES[0];
-  const proxied = proxy + encodeURIComponent(TARGET);
-  setStatus("Routing through proxy " + (idx + 1) + "...");
-  openShell(makeFrameHtml(proxied));
-  setStatus("Proxy " + (idx + 1) + " launched. May be slower.");
-}
-
-function launchCustom() {
-  const url = prompt("Full URL (https://...):", TARGET);
-  if (!url || !url.startsWith("http")) {
-    if (url) setStatus("URL must start with http/https.");
-    return;
-  }
-  setStatus("Custom launch...");
-  openShell(makeFrameHtml(url.trim()));
-  setStatus("Custom launched.");
+function goCustom() {
+  const v = document.getElementById("custom").value.trim();
+  if (!v.startsWith("http")) { status("Need full https:// URL"); return; }
+  openFrame(v);
 }
 </script>
 </body>
