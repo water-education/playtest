@@ -3,146 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Debugger v1.3</title>
+    <title>Direct Rail Link v4</title>
     <style>
    body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #121212;
-    color: #e0e0e0;
     margin: 0;
     padding: 0;
-  }
-.viewport {
-    height: 90vh;
-    display: flex;
-    flex-direction: column;
-    background: #fff;
-  }
-.bar {
-    background: #2d2d2d;
-    color: #aaa;
-    padding: 10px 20px;
-    font-size: 12px;
-    font-family: monospace;
+    height: 100vh;
+    background-color: #000;
+    color: #00ff00;
+    font-family: 'Courier New', Courier, monospace;
+ }
+
+  .ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: rgba(0, 50, 0, 0.8);
+    border-bottom: 1px solid #00ff00;
+    z-index: 1000;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0 10px;
+    box-sizing: border-box;
   }
- .bar-success { border-bottom: 2px solid #4caf50; }
 
-  #game-area {
-    flex: 1;
-    padding: 20px;
-    overflow: auto;
-    position: relative;
-  }
-    /* Loading Overlay */
-.scan-line {
+.status-dot {
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+ }
+
+ .pulse-green { background-color: #00ff00; box-shadow: 0 0 5px #00ff00; animation: blink 1.5s infinite; }
+ .pulse-red { background-color: #ff0000; animation: none; }
+
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+   #game-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #111;
+ }
+
+ iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+ }
+
+ #loading-text {
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 2px;
-    background: #00ff00;
-    box-shadow: 0 0 10px #00ff00;
-    animation: scan 2s linear infinite;
-    display: none;
+    bottom: 10px;
+    left: 10px;
+    font-size: 12px;
+    color: #008800;
     z-index: 10;
   }
-.loader {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255,255,255,.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 1s ease-in-out infinite;
-  }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes scan { 0% { top: 0; opacity: 1; } 100% { top: 100%; opacity: 0; } }
     </style>
 </head>
 <body>
 
-<div class="viewport">
-    <div class="bar" id="status-bar">
-    <span id="status-text">SYSTEM READY</span>
-    <span id="status-sub">WAITING FOR INPUT...</span>
-    </div>
-    <div id="game-area">
-    <div id="loader-overlay" style="text-align:center; padding: 50px;">
-    <div class="loader"></div>
-    <p style="margin-top: 10px; color: #666;">Establishing Secure Tunnel...</p>
-    </div>
-    </div>
+<!-- UI Header -->
+<div class="ui-layer">
+    <span id="status-text">INITIALIZ CONNECTION PROTOCOLS...</span>
+    <span id="latency-text">0ms</span>
 </div>
 
-<script>
-   // -------------------------------------------------------------------------
-    // 1. CONFIGURATION
-   // -------------------------------------------------------------------------
-    // Using the Jina.ai proxy. 
-    // Format: https://r.jina.ai/http://TARGET
-    // See FAQ below if this link is blocked.
-    const PROXY_URL = "https://r.jina.ai/http://tboi.online";
+<!-- Game Area -->
+<div id="game-container">
+    <iframe id="game-frame" src="about:blank"></iframe>
+</div>
 
-    const statusBar = document.getElementById('status-bar');
-    const statusText = document.getElementById('status-text');
-    const statusSub = document.getElementById('status-sub');
-    const gameArea = document.getElementById('game-area');
-    const loaderOverlay = document.getElementById('loader-overlay');
+<div id="loading-text">Waiting for kernel handshake...</div>
+
+<script>
+   const statusEl = document.getElementById('status-text');
+   const latencyEl = document.getElementById('latency-text');
+   const gameFrame = document.getElementById('game-frame');
 
     async function loadGame() {
-   try {
-    // UI Update
-    statusText.textContent = "CONNECTING TO HOST...";
-    statusText.style.color = "#ff9800";
-    loaderOverlay.style.display = "block";
+  try {
+    // Update UI
+    statusEl.textContent = "ESTABLISHING TUNNEL...";
+    statusEl.style.color = "#ffff00";
 
-    // Fetch
-    const response = await fetch(PROXY_URL);
+    // Tracking latency
+    const start = performance.now();
 
-    if (!response.ok) {
-    throw new Error(`Server returned ${response.status}`);
+    // 1. Append the game URL to the current host (if possible) 
+    // OR use the direct IP:PORT if blocked via simple logic.
+    // Reverting to the most robust syntax:
+    const targetUrl = "https://tboi.online";
+
+    // 2. Inject the iframe source
+    // We verify the connection actively by waiting for the DOM to match 'readyState'
+    gameFrame.src = targetUrl;
+
+    // 3. Monitor for load success
+    gameFrame.onload = () => {
+    const duration = Math.round(performance.now() - start);
+    latencyEl.textContent = duration + "ms";
+    statusEl.textContent = "CONNECTED";
+    statusEl.style.color = "#00ff00";
+    statusEl.classList.add('pulse-green');
+  
+    if(duration > 2000) {
+    document.getElementById('loading-text').textContent = `Target loaded (${duration}ms delay). Starting Engine...`;
+   } else {
+    document.getElementById('loading-text').textContent = "Engine started.";
   }
+ };
 
-    const html = await response.text();
+    // 4. Handle immediate failure
+    gameFrame.onerror = () => {
+    throw new Error("Network Handshake Failed");
+  };
+  
+    // Fallback check
+    if (gameFrame.contentDocument) {
+    document.getElementById('loading-text').textContent = "Document established. Semantics parsing.";
 
-    // Success State
-    gameArea.innerHTML = html;
-    statusText.textContent = "CONNECTION ESTABLISHED";
-    statusSub.textContent = "Render successful via Proxy Gateway.";
-    statusText.style.color = "#4caf50";
-    loaderOverlay.style.display = "none"; // Hide loader
-   statusBar.classList.add('bar-success');
-
-    // Auto-resize fix (proxy sites sometimes lose viewport logic)
-    setTimeout(() => {
-    const iframe = gameArea.querySelector('iframe');
-   if(iframe) {
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-   }
-    }, 100);
+    // If there is content waiting (some browsers load 'about:blank' first)
+    if(gameFrame.contentDocument.readyState === 'complete') {
+    gameFrame.onload();
+  }
+ }
 
     } catch (err) {
     console.error(err);
-    gameArea.innerHTML = `
-    <div style="background: #ffebee; padding: 20px; border-left: 5px solid #f44336;">
-    <h3 style="margin-top:0;">CONNECTION ERROR</h3>
-    <p>Could not connect to <strong>tboi.online</strong>.</p>
-    <p><strong>Reason:</strong> ${err.message}</p>
-    <p><em>The target server or proxy gateway might be blocked on this network.</em></p>
-    </div>
-   `;
-    statusText.textContent = "CONNECTION FAILED";
-    statusText.style.color = "#f44336";
-    statusSub.textContent = "Verify manual link in browser.";
-    loaderOverlay.style.display = "none";
-   }
+    statusEl.textContent = "CONNECTION REJECTED";
+    statusEl.style.color = "#ff0000";
+    document.getElementById('loading-text').textContent = "ERROR: Could not reach target.";
+  }
  }
 
-    // Start loading on load
-    window.addEventListener('load', () => {
-    setTimeout(loadGame, 100);
- });
+    // Start
+    window.addEventListener('load', loadGame);
 
 </script>
 
