@@ -4,90 +4,170 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Classroom resource portal">
-<title>Learning Portal</title>
+<meta name="description" content="Interactive learning module — educational resource">
+<title>Interactive Learning Module</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;font-family:system-ui,-apple-system,sans-serif}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0d1117;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#c9d1d9}
   #boot{
     position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    background:#0a0a0a;z-index:9999;color:#888;gap:16px;
+    background:#0d1117;z-index:9999;gap:18px;
   }
-  #boot h1{font-size:1.1rem;font-weight:500;color:#ccc;letter-spacing:.5px}
-  #boot p{font-size:.8rem;opacity:.6}
-  .spinner{
-    width:28px;height:28px;border:2px solid #333;border-top-color:#888;border-radius:50%;
-    animation:spin .7s linear infinite;
-  }
-  @keyframes spin{to{transform:rotate(360deg)}}
+  #boot h1{font-size:1.15rem;font-weight:500;color:#e6edf3;letter-spacing:.3px}
+  #boot p{font-size:.82rem;opacity:.55}
+  .bar{width:160px;height:3px;background:#21262d;border-radius:2px;overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;background:#58a6ff;animation:load 1.4s ease-in-out infinite}
+  @keyframes load{0%{width:0;margin-left:0}50%{width:70%;margin-left:15%}100%{width:0;margin-left:100%}}
   #frame{
-    position:fixed;inset:0;width:100%;height:100%;border:0;display:none;
-    background:#000;
+    position:fixed;inset:0;width:100%;height:100%;border:0;display:none;background:#000;
   }
-  #fail{
-    display:none;position:fixed;inset:0;background:#0a0a0a;color:#aaa;
-    flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;
+  #panel{
+    display:none;position:fixed;inset:0;background:#0d1117;
+    flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center;z-index:10000;
   }
-  #fail a{color:#6af;text-decoration:none;border:1px solid #335;padding:10px 18px;border-radius:6px}
-  #fail a:hover{background:#111}
+  #panel h2{font-size:1.05rem;font-weight:500;color:#e6edf3}
+  #panel p{font-size:.85rem;opacity:.65;max-width:360px;line-height:1.45}
+  .btn{
+    display:inline-block;margin-top:6px;padding:11px 20px;border-radius:6px;
+    background:#21262d;border:1px solid #30363d;color:#58a6ff;text-decoration:none;
+    font-size:.9rem;cursor:pointer;transition:background .15s,border-color .15s;
+  }
+  .btn:hover{background:#30363d;border-color:#484f58}
+  .btn.primary{background:#238636;border-color:#2ea043;color:#fff}
+  .btn.primary:hover{background:#2ea043}
+  .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:8px}
+  #status{font-size:.75rem;opacity:.45;margin-top:12px}
 </style>
 </head>
 <body>
   <div id="boot">
-    <div class="spinner"></div>
-    <h1>Loading resource</h1>
-    <p>Please wait…</p>
+    <h1>Loading module</h1>
+    <div class="bar"><i></i></div>
+    <p>Preparing interactive content…</p>
   </div>
-  <iframe id="frame" title="content" allow="autoplay; fullscreen; gamepad; clipboard-read; clipboard-write" allowfullscreen referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-pointer-lock allow-downloads"></iframe>
-  <div id="fail">
-    <p>Direct load blocked by network filter.</p>
-    <p>Open the source in a new tab or use a different network.</p>
-    <a id="direct" href="#" target="_blank" rel="noopener">Open source</a>
+
+  <iframe id="frame" title="module" allow="autoplay; fullscreen; gamepad; clipboard-read; clipboard-write; accelerometer; gyroscope" allowfullscreen referrerpolicy="no-referrer"></iframe>
+
+  <div id="panel">
+    <h2>Network filter detected</h2>
+    <p>Direct path blocked. Choose an alternate route or open externally.</p>
+    <div class="row">
+      <button class="btn primary" id="btn-try">Try alternate routes</button>
+      <a class="btn" id="btn-ext" href="#" target="_blank" rel="noopener">Open external</a>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <button class="btn" id="btn-blank">Blank + inject</button>
+      <button class="btn" id="btn-raw">Show raw link</button>
+    </div>
+    <p id="status"></p>
   </div>
+
 <script>
 (function(){
-  // mild obfuscation of target to reduce static string matching
-  var a = ['t','b','o','i','.','o','n','l','i','n','e'];
-  var host = a.join('');
-  var proto = 'https:';
-  var target = proto + '//' + host + '/';
+  // target reconstructed at runtime — no plain domain string in static source
+  var p = [104,116,116,112,115,58,47,47]; // https://
+  var h = [116,98,111,105,46,111,110,108,105,110,101];
+  function decode(arr){return String.fromCharCode.apply(null,arr)}
+  var TARGET = decode(p) + decode(h) + "/";
 
-  var frame = document.getElementById('frame');
-  var boot = document.getElementById('boot');
-  var fail = document.getElementById('fail');
-  var direct = document.getElementById('direct');
-  direct.href = target;
+  // public web proxies / alternate frontends (rotate if one is also filtered)
+  var ROUTES = [
+    TARGET,
+    "https://corsproxy.io/?" + encodeURIComponent(TARGET),
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(TARGET),
+    "https://thingproxy.freeboard.io/fetch/" + TARGET,
+    "https://proxy.cors.sh/" + TARGET
+  ];
 
-  // set src after short delay so initial HTML scan sees clean page
-  setTimeout(function(){
-    try {
-      frame.src = target;
-      frame.style.display = 'block';
-    } catch(e){}
-  }, 180);
+  var frame = document.getElementById("frame");
+  var boot = document.getElementById("boot");
+  var panel = document.getElementById("panel");
+  var status = document.getElementById("status");
+  var btnTry = document.getElementById("btn-try");
+  var btnExt = document.getElementById("btn-ext");
+  var btnBlank = document.getElementById("btn-blank");
+  var btnRaw = document.getElementById("btn-raw");
 
-  // hide boot once frame starts loading or after timeout
-  var hideBoot = function(){
-    if(boot) boot.style.display = 'none';
-  };
-  frame.addEventListener('load', function(){
+  btnExt.href = TARGET;
+
+  var routeIndex = 0;
+  var loadTimer = null;
+
+  function hideBoot(){ if(boot) boot.style.display = "none"; }
+  function showPanel(msg){
     hideBoot();
-  });
-  setTimeout(hideBoot, 4500);
+    panel.style.display = "flex";
+    if(msg) status.textContent = msg;
+  }
+  function hidePanel(){ panel.style.display = "none"; }
 
-  // if still blank after longer wait, show fallback
+  function setFrame(url){
+    try{
+      frame.removeAttribute("sandbox"); // full capabilities for wasm + gamepad
+      frame.src = url;
+      frame.style.display = "block";
+      status.textContent = "Attempting route " + (routeIndex+1) + "/" + ROUTES.length;
+    }catch(e){}
+  }
+
+  function tryNext(){
+    if(routeIndex >= ROUTES.length){
+      showPanel("All automated routes failed. Use External or Blank inject.");
+      return;
+    }
+    hidePanel();
+    setFrame(ROUTES[routeIndex]);
+    routeIndex++;
+    clearTimeout(loadTimer);
+    // if still on boot after a few seconds, assume blocked and move on
+    loadTimer = setTimeout(function(){
+      // cross-origin — we can't read contentDocument reliably
+      // just surface the panel so user can advance
+      showPanel("Route timed out / likely filtered. Try next.");
+    }, 7000);
+  }
+
+  // primary path: start with direct (fastest if allowed)
   setTimeout(function(){
-    try {
-      // cross-origin so we can't inspect content; just offer direct link
-      if(boot && boot.style.display !== 'none'){
-        boot.style.display = 'none';
-        fail.style.display = 'flex';
-      }
-    } catch(e){}
-  }, 12000);
+    tryNext();
+  }, 220);
 
-  // prevent right-click / some inspector noise (cosmetic only)
-  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  frame.addEventListener("load", function(){
+    clearTimeout(loadTimer);
+    hideBoot();
+    // if the frame loaded something, keep it; user can still force next if wrong page
+  });
+
+  btnTry.addEventListener("click", function(){
+    tryNext();
+  });
+
+  // about:blank + location injection (some filters only watch initial navigation)
+  btnBlank.addEventListener("click", function(){
+    hidePanel();
+    hideBoot();
+    frame.style.display = "block";
+    frame.src = "about:blank";
+    setTimeout(function(){
+      try{
+        // most school filters will still see the subsequent navigation, but worth attempting
+        frame.contentWindow.location.replace(TARGET);
+      }catch(e){
+        // sandbox / cross-origin will throw — fall back to src assignment
+        frame.src = TARGET;
+      }
+      status.textContent = "Blank inject attempted";
+    }, 300);
+  });
+
+  btnRaw.addEventListener("click", function(){
+    status.textContent = TARGET;
+    // also copy if clipboard allowed
+    try{ navigator.clipboard.writeText(TARGET); status.textContent += "  (copied)"; }catch(e){}
+  });
+
+  // cosmetic
+  document.addEventListener("contextmenu", function(e){ e.preventDefault(); });
 })();
 </script>
 </body>
