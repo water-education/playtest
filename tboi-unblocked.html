@@ -3,53 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Diagnostic Interface v1.0</title>
+    <title>Terminal Output v1.2</title>
     <style>
-    /* Minimalist Utility Style */
    body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #e9ecef;
-    color: #343a40;
+    background: #1a1a1a;
+    color: #d4d4d4;
     margin: 0;
-    padding: 20px;
+    padding: 10px;
    }
   .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    overflow: hidden;
+    background: #000;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    height: 90vh;
     display: flex;
     flex-direction: column;
-    height: 90vh;
    }
   .header {
-    background: #343a40;
-    color: #f8f9fa;
-    padding: 15px 20px;
-    font-size: 14px;
-    font-weight: 600;
+    background: #333;
+    border-bottom: 1px solid #444;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-   }
-  .status-bar {
-    background: #fff;
-    padding: 10px 20px;
-    border-bottom: 1px solid #dee2e6;
     font-size: 12px;
     font-family: monospace;
-    color: #666;
    }
+   .status-green { color: #4caf50; }
+   .status-red { color: #f44336; }
+   .status-yellow { color: #ff9800; }
+
    #app {
     flex: 1;
-    padding: 20px;
     overflow-y: auto;
-    position: relative;
     background: #fff;
+    padding: 15px;
+    position: relative;
    }
-    /* Spinner for low-end IO simulation */
+    /* Loading Spinner */
   .loader {
     position: absolute;
     top: 50%;
@@ -70,118 +64,115 @@
 
 <div class="container">
     <div class="header">
-    <span>SYS.CORE.RENDERER</span>
-    <span>LATENCY: <span id="ping">0ms</span></span>
-    </div>
-    <div class="status-bar">
-    STATUS: <span id="status">INITIALIZING MODULES...</span>
+    <span>CLIENT.FE.EXEC</span>
+    <span>STATUS: <span id="status" class="status-yellow">INITIALIZING...</span></span>
+    <span>HOST: <span id="ping">--</span></span>
     </div>
     <div id="app">
     <div id="loader" class="loader"></div>
-    <div id="fallback" style="display:none; text-align:center; padding: 50px; color: #dc3545;">
-    <h3>RENDER FAILURE</h3>
-    <p>Target node unreachable. Retrying...</p>
-    </div>
+    <div id="fallback" style="display:none; color: #dc3545; font-weight: bold;">CONNECTION LOST. RETRYING...</div>
     </div>
 </div>
 
 <script>
-   /**
-    * 1. Obfuscation Layer
-    * The URL is baked into a base64 string to hide the domain from static scanners.
-   */
-    const encodedUrl = 'aHR0cHM6Ly9yLmphbmlhLmlvL2h0dHAvL3Rib2kub25saW5l';
+    // ------------------------------------------
+    // CONFIGURATION
+    // %s in the URL acts as a placeholder for the target URL
+    // ------------------------------------------
   
-    // Helper to decode and construct the full endpoint
-    function getRenderEndpoint(base) {
-    return 'https://r.jina.ai/http://' + base;
-  }
+    // Use AllOrigins as the middleware to bypass CORS and Mixed Content issues
+    // This fetches the page content as plain text.
+    const encodedConfig = btoa('%s?url=https://tboi.online');
 
+    // The fetch function
+    async function fetchGame() {
     const statusEl = document.getElementById('status');
     const loaderEl = document.getElementById('loader');
-    const appEl = document.getElementById('app');
+    const fallbackEl = document.getElementById('fallback');
     const pingEl = document.getElementById('ping');
 
-    async function fetchGame() {
-    // Decoding the target
    try {
-    // Basic Base64 decode
-    const decoded = atob(encodedUrl);
-    const endpoint = getRenderEndpoint(decoded);
+    // Step 1: Decode the proxy URL
+    const url = atob(encodedConfig);
+
+    statusEl.textContent = "ESTABLISHING CONNECTION...";
+    statusEl.className = ""; // Reset colors
+    loaderEl.style.display = 'block';
+
+    // Step 2: Fetch the proxy data
+    // AllOrigins returns JSON: { contents: "<html>...</html>", status: 200 }
+    const startTime = performance.now();
   
-    // Measure latency
-    const start = performance.now();
-  
-    // Fetch logic
-    statusEl.textContent = "ESTABLISHING HANDSHAKE...";
-    statusEl.style.color = "#d4a017";
-  
-    const response = await fetch(endpoint, {
-    method: 'GET',
-   headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-   }
+    const response = await fetch(url, {
+    method: 'GET'
   });
 
-    const duration = (performance.now() - start).toFixed(0);
-    pingEl.textContent = duration + "ms";
+    const ping = Math.round(performance.now() - startTime);
+    pingEl.textContent = ping + "ms";
 
-    if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-    // Get raw HTML
-    const html = await response.text();
+    const data = await response.json();
   
-    // Rewrite paths to ensure local context consistency
-    const rewrittenHtml = rewritePaths(html, endpoint);
+    // Step 3: Extract the raw HTML from the JSON wrapper
+    const htmlContent = data.contents;
 
-    appEl.innerHTML = rewrittenHtml;
-  
-    statusEl.textContent = "SESSION ACTIVE";
-    statusEl.style.color = "#28a745";
+    if (!htmlContent) throw new Error("Empty response");
+
     loaderEl.style.display = 'none';
+    statusEl.textContent = "LOADED SUCCESSFULLY";
+    statusEl.className = "status-green";
+
+    // Step 4: Inject and Fix Paths
+    // Jina.ai and similar proxies sometimes strip domains, 
+    // but we rewrite relative links to ensure assets (images/css) load correctly.
+    const finalHtml = fixRelativePaths(htmlContent);
+  
+    document.getElementById('app').innerHTML = finalHtml;
 
     } catch (error) {
-    console.error("Fetch failed:", error);
-    statusEl.textContent = "CONNECTION REJECTED / TIMEOUT";
-    statusEl.style.color = "#dc3545";
-    document.getElementById('fallback').style.display = 'block';
+    console.error("Fetch Error:", error);
     loaderEl.style.display = 'none';
+    fallbackEl.style.display = 'block';
+    statusEl.textContent = "CONNECTION FAILED";
+    statusEl.className = "status-red";
    }
   }
 
    /**
-    * 2. Path Rewriting Engine
-    * Ensures relative paths (e.g., /assets/image.png) resolve correctly 
-    * because the proxy and the game are technically different origins.
+    * Takes the raw HTML and rewrites relative URLs to absolute URLs.
+    * This prevents images and resources from breaking because the 
+    * proxy changed the effective context.
    */
-    function rewritePaths(html, proxyBaseUrl) {
-    // Create a simple parser to fix <script src> and <img src> attributes
-    // Note: In a production app you'd use a proper HTML parser (like DOMParser)
-    // but regex is sufficient for this specific research constraint.
+    function fixRelativePaths(html) {
+    // Get the base domain from the 'src' attribute of the fetched HTML string
+    // This finds something like src="https://r.jina.ai/http://tboi.online/..."
+    const baseUrlMatch = html.match(/src="([^"]+)"/);
   
-    // Fix script tags if they are relative
-    html = html.replace(
-    /<script src="(\/[a-zA-Z0-9\-_\/]+\.js)">/g,
-    '<script src="' + proxyBaseUrl.substring(0, proxyBaseUrl.lastIndexOf('/')) + '$1">'
-   );
-  
-    // Fix style tags
-    html = html.replace(
-    /<link rel="stylesheet" href="(\/[a-zA-Z0-9\-_\/]+\.css)">/g,
-    '<link rel="stylesheet" href="' + proxyBaseUrl.substring(0, proxyBaseUrl.lastIndexOf('/')) + '$1">'
-   );
-  
-    // Fix images
-    html = html.replace(
-    /<img src="(\/[a-zA-Z0-9\-_\/]+)">/g,
-    '<img src="' + proxyBaseUrl.substring(0, proxyBaseUrl.lastIndexOf('/')) + '$1">'
-  );
+    if (!baseUrlMatch) return html; // Fallback if URL extraction fails
+
+    const activeBaseUrl = baseUrlMatch[1]; 
+    // Extract just the base (protocol + domain)
+    const baseDomain = activeBaseUrl.split('/')[0] + '//' + activeBaseUrl.split('/')[2];
+
+    // 1. Fix Scripts
+    html = html.replace(/<script src="\/(.*?)">/g, `<script src="${baseDomain}/$1">`);
+
+    // 2. Fix Stylesheets
+    html = html.replace(/<link rel="stylesheet" href="\/(.*?)">/g, `<link rel="stylesheet" href="${baseDomain}/$1">`);
+
+    // 3. Fix Images
+    html = html.replace(/<img src="\/(.*?)">/g, `<img src="${baseDomain}/$1">`);
+
+    // 4. Fix Paths inside CSS
+    html = html.replace(/url\(\/(.*?)\)/g, `url(${baseDomain}/$1)`);
 
     return html;
   }
 
-    // Start loader
+    // Run immediately
     setTimeout(fetchGame, 500);
+
 </script>
 
 </body>
