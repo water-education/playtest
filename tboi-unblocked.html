@@ -1,176 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Interactive educational module for classroom use">
-<title>Interactive Learning Module</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;background:#0d1117;font-family:system-ui,-apple-system,sans-serif;color:#c9d1d9}
-#boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d1117;z-index:9999;gap:14px}
-#boot h1{font-size:1.1rem;font-weight:500;color:#e6edf3}
-#boot p{font-size:.8rem;opacity:.5}
-.bar{width:140px;height:3px;background:#21262d;border-radius:2px;overflow:hidden}
-.bar>i{display:block;height:100%;width:0;background:#58a6ff;animation:load 1.2s ease-in-out infinite}
-@keyframes load{0%{width:0;margin-left:0}50%{width:65%;margin-left:18%}100%{width:0;margin-left:100%}}
-#frame{position:fixed;inset:0;width:100%;height:100%;border:0;display:none;background:#000}
-#panel{display:none;position:fixed;inset:0;background:#0d1117;overflow:auto;z-index:10000;padding:20px}
-#panel .inner{max-width:420px;margin:0 auto;text-align:center}
-#panel h2{font-size:1.05rem;font-weight:500;color:#e6edf3;margin-bottom:6px}
-#panel .sub{font-size:.8rem;opacity:.55;margin-bottom:18px;line-height:1.4}
-.btn{display:block;width:100%;margin:0 0 8px;padding:12px 14px;border-radius:7px;background:#21262d;border:1px solid #30363d;color:#58a6ff;text-decoration:none;font-size:.88rem;cursor:pointer;text-align:left}
-.btn:hover{background:#30363d;border-color:#484f58}
-.btn strong{display:block;color:#e6edf3;font-size:.92rem;margin-bottom:2px}
-.btn span{font-size:.75rem;opacity:.55}
-.btn.primary{background:#238636;border-color:#2ea043;color:#fff}
-.btn.primary strong{color:#fff}
-.btn.primary span{opacity:.8}
-#status{font-size:.72rem;opacity:.4;margin-top:14px;word-break:break-all}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Diagnostic Interface v1.0</title>
+    <style>
+    /* Minimalist Utility Style */
+   body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #e9ecef;
+    color: #343a40;
+    margin: 0;
+    padding: 20px;
+   }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 90vh;
+   }
+  .header {
+    background: #343a40;
+    color: #f8f9fa;
+    padding: 15px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+   }
+  .status-bar {
+    background: #fff;
+    padding: 10px 20px;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 12px;
+    font-family: monospace;
+    color: #666;
+   }
+   #app {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    position: relative;
+    background: #fff;
+   }
+    /* Spinner for low-end IO simulation */
+  .loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #343a40;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    display: none;
+   }
+    @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+    </style>
 </head>
 <body>
-<div id="boot">
-  <h1>Loading module</h1>
-  <div class="bar"><i></i></div>
-  <p>Preparing interactive content…</p>
+
+<div class="container">
+    <div class="header">
+    <span>SYS.CORE.RENDERER</span>
+    <span>LATENCY: <span id="ping">0ms</span></span>
+    </div>
+    <div class="status-bar">
+    STATUS: <span id="status">INITIALIZING MODULES...</span>
+    </div>
+    <div id="app">
+    <div id="loader" class="loader"></div>
+    <div id="fallback" style="display:none; text-align:center; padding: 50px; color: #dc3545;">
+    <h3>RENDER FAILURE</h3>
+    <p>Target node unreachable. Retrying...</p>
+    </div>
+    </div>
 </div>
-<iframe id="frame" title="module" allow="autoplay; fullscreen; gamepad; clipboard-read; clipboard-write" allowfullscreen referrerpolicy="no-referrer"></iframe>
-<div id="panel">
-  <div class="inner">
-    <h2>Route selection</h2>
-    <p class="sub">Pick a method. Common school-filter workarounds from public forums.</p>
-    <button class="btn primary" id="m1"><strong>1. Direct + noise</strong><span>Flood concurrent requests then load</span></button>
-    <button class="btn" id="m2"><strong>2. Google Translate tunnel</strong><span>Load via translate.google.com proxy</span></button>
-    <button class="btn" id="m3"><strong>3. CORS / public proxies</strong><span>Rotate allorigins + corsproxy + thingproxy</span></button>
-    <button class="btn" id="m4"><strong>4. about:blank inject</strong><span>Blank tab then location.replace</span></button>
-    <button class="btn" id="m5"><strong>5. data: URL bootstrap</strong><span>Self-contained HTML redirect (paste method)</span></button>
-    <button class="btn" id="m6"><strong>6. External open</strong><span>New tab to source (or copy link)</span></button>
-    <p id="status"></p>
-  </div>
-</div>
+
 <script>
-(function(){
-  var _p=[104,116,116,112,115,58,47,47];
-  var _h=[116,98,111,105,46,111,110,108,105,110,101];
-  function d(a){return String.fromCharCode.apply(null,a)}
-  var TARGET=d(_p)+d(_h)+"/";
-
-  var frame=document.getElementById("frame");
-  var boot=document.getElementById("boot");
-  var panel=document.getElementById("panel");
-  var status=document.getElementById("status");
-
-  function hideBoot(){boot.style.display="none"}
-  function showPanel(){hideBoot();panel.style.display="block"}
-  function hidePanel(){panel.style.display="none"}
-  function setStatus(t){status.textContent=t}
-
-  function launch(url){
-    hidePanel();
-    hideBoot();
-    frame.style.display="block";
-    try{frame.src=url}catch(e){}
-    setStatus("loaded: "+url.slice(0,60));
+   /**
+    * 1. Obfuscation Layer
+    * The URL is baked into a base64 string to hide the domain from static scanners.
+   */
+    const encodedUrl = 'aHR0cHM6Ly9yLmphbmlhLmlvL2h0dHAvL3Rib2kub25saW5l';
+  
+    // Helper to decode and construct the full endpoint
+    function getRenderEndpoint(base) {
+    return 'https://r.jina.ai/http://' + base;
   }
 
-  // noise flood
-  function fireNoise(){
-    var words=["edu","learn","module","resource","class","portal","docs","lab","study","content","asset","cdn","static","media","tools","help","guide","wiki","api","data"];
-    var tlds=[".com",".org",".net",".edu",".io",".app",".dev",".site",".cloud"];
-    for(var i=0;i<70;i++){
-      (function(i){
-        setTimeout(function(){
-          var u="https://"+words[i%words.length]+"-"+words[(i*3)%words.length]+(1000+i)+tlds[i%tlds.length]+"/";
-          try{var img=new Image();img.referrerPolicy="no-referrer";img.src=u+"p.gif?"+Math.random()}catch(e){}
-          try{fetch(u,{mode:"no-cors",cache:"no-store",referrerPolicy:"no-referrer"}).catch(function(){})}catch(e){}
-        },i*8);
-      })(i);
-    }
+    const statusEl = document.getElementById('status');
+    const loaderEl = document.getElementById('loader');
+    const appEl = document.getElementById('app');
+    const pingEl = document.getElementById('ping');
+
+    async function fetchGame() {
+    // Decoding the target
+   try {
+    // Basic Base64 decode
+    const decoded = atob(encodedUrl);
+    const endpoint = getRenderEndpoint(decoded);
+  
+    // Measure latency
+    const start = performance.now();
+  
+    // Fetch logic
+    statusEl.textContent = "ESTABLISHING HANDSHAKE...";
+    statusEl.style.color = "#d4a017";
+  
+    const response = await fetch(endpoint, {
+    method: 'GET',
+   headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+   }
+  });
+
+    const duration = (performance.now() - start).toFixed(0);
+    pingEl.textContent = duration + "ms";
+
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    // Get raw HTML
+    const html = await response.text();
+  
+    // Rewrite paths to ensure local context consistency
+    const rewrittenHtml = rewritePaths(html, endpoint);
+
+    appEl.innerHTML = rewrittenHtml;
+  
+    statusEl.textContent = "SESSION ACTIVE";
+    statusEl.style.color = "#28a745";
+    loaderEl.style.display = 'none';
+
+    } catch (error) {
+    console.error("Fetch failed:", error);
+    statusEl.textContent = "CONNECTION REJECTED / TIMEOUT";
+    statusEl.style.color = "#dc3545";
+    document.getElementById('fallback').style.display = 'block';
+    loaderEl.style.display = 'none';
+   }
   }
 
-  // 1 direct + noise
-  document.getElementById("m1").onclick=function(){
-    setStatus("noise + direct…");
-    fireNoise();
-    setTimeout(function(){launch(TARGET)},420);
-  };
+   /**
+    * 2. Path Rewriting Engine
+    * Ensures relative paths (e.g., /assets/image.png) resolve correctly 
+    * because the proxy and the game are technically different origins.
+   */
+    function rewritePaths(html, proxyBaseUrl) {
+    // Create a simple parser to fix <script src> and <img src> attributes
+    // Note: In a production app you'd use a proper HTML parser (like DOMParser)
+    // but regex is sufficient for this specific research constraint.
+  
+    // Fix script tags if they are relative
+    html = html.replace(
+    /<script src="(\/[a-zA-Z0-9\-_\/]+\.js)">/g,
+    '<script src="' + proxyBaseUrl.substring(0, proxyBaseUrl.lastIndexOf('/')) + '$1">'
+   );
+  
+    // Fix style tags
+    html = html.replace(
+    /<link rel="stylesheet" href="(\/[a-zA-Z0-9\-_\/]+\.css)">/g,
+    '<link rel="stylesheet" href="' + proxyBaseUrl.substring(0, proxyBaseUrl.lastIndexOf('/')) + '$1">'
+   );
+  
+    // Fix images
+    html = html.replace(
+    /<img src="(\/[a-zA-Z0-9\-_\/]+)">/g,
+    '<img src="' + proxyBaseUrl.substring(0, proxyBaseUrl.lastIndexOf('/')) + '$1">'
+  );
 
-  // 2 Google Translate tunnel (common reddit / x method)
-  document.getElementById("m2").onclick=function(){
-    // translate.goog form: https://TARGET-without-protocol.translate.goog/
-    // or full websites translator
-    var host=d(_h);
-    var g1="https://"+host.replace(/\./g,"-")+".translate.goog/";
-    var g2="https://translate.google.com/translate?sl=auto&tl=en&u="+encodeURIComponent(TARGET);
-    setStatus("trying translate tunnel…");
-    // try translate.goog first (cleaner), fallback to classic
-    launch(g1);
-    setTimeout(function(){
-      try{frame.contentWindow.location.replace(g2)}catch(e){frame.src=g2}
-    },3500);
-  };
+    return html;
+  }
 
-  // 3 public CORS proxies
-  document.getElementById("m3").onclick=function(){
-    var routes=[
-      "https://corsproxy.io/?"+encodeURIComponent(TARGET),
-      "https://api.allorigins.win/raw?url="+encodeURIComponent(TARGET),
-      "https://thingproxy.freeboard.io/fetch/"+TARGET,
-      "https://proxy.cors.sh/"+TARGET
-    ];
-    var i=0;
-    function next(){
-      if(i>=routes.length){setStatus("all proxy routes exhausted");return}
-      setStatus("proxy "+(i+1)+"/"+routes.length);
-      launch(routes[i]);
-      i++;
-      setTimeout(next,4500);
-    }
-    next();
-  };
-
-  // 4 about:blank inject
-  document.getElementById("m4").onclick=function(){
-    hidePanel();hideBoot();
-    frame.style.display="block";
-    frame.src="about:blank";
-    setStatus("blank inject…");
-    setTimeout(function(){
-      try{frame.contentWindow.location.replace(TARGET)}catch(e){
-        try{frame.src=TARGET}catch(e2){}
-      }
-    },280);
-  };
-
-  // 5 data: URL method — show a copyable data URI that does the redirect
-  document.getElementById("m5").onclick=function(){
-    // minimal page that meta-refreshes + js redirects
-    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url='+TARGET+'"><title>Resource</title></head><body><script>location.replace("'+TARGET+'")<\/script><p><a href="'+TARGET+'">continue</a></p></body></html>';
-    var dataUrl="data:text/html;base64,"+btoa(unescape(encodeURIComponent(html)));
-    setStatus("data URI ready — opening…");
-    // try opening in same frame; if school blocks data: this will fail and user can copy
-    try{
-      launch(dataUrl);
-    }catch(e){}
-    // also put in status so user can copy-paste into address bar if needed
-    setTimeout(function(){
-      status.textContent=dataUrl;
-      try{navigator.clipboard.writeText(dataUrl)}catch(e){}
-    },800);
-  };
-
-  // 6 external
-  document.getElementById("m6").onclick=function(){
-    setStatus(TARGET);
-    try{navigator.clipboard.writeText(TARGET)}catch(e){}
-    window.open(TARGET,"_blank","noopener");
-  };
-
-  setTimeout(showPanel,450);
-  document.addEventListener("contextmenu",function(e){e.preventDefault()});
-})();
+    // Start loader
+    setTimeout(fetchGame, 500);
 </script>
+
 </body>
 </html>
